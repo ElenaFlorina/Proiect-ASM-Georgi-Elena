@@ -96,6 +96,100 @@ LEA DX, msg_err_len
 INT 21h
 JMP final_program
 
+    ;Calcul cuvant C
+start_calcul:
+    LEA SI, sir
+    MOV AL, [SI]
+    SHR AL, 4
+
+    MOV BL, sir_len
+    MOV BH, 0
+    DEC BX
+    MOV DL, sir[BX]
+    AND DL, 0Fh
+
+    XOR AL, DL
+    MOV temp_byte, AL
+
+    MOV CL, sir_len
+    MOV CH, 0
+    LEA SI, sir
+    MOV BL, 0
+loop_or:
+    MOV AL, [SI]
+    SHR AL, 2
+    AND AL, 0Fh
+    OR BL, AL
+    INC SI
+    LOOP loop_or
+
+    SHL BL, 4
+    OR temp_byte, BL
+
+    MOV CL, sir_len
+    MOV CH, 0
+    LEA SI, sir
+    MOV AX, 0
+loop_sum:
+    MOV BL, [SI]
+    MOV BH, 0
+    ADD AX, BX
+    INC SI
+    LOOP loop_sum
+
+    MOV AH, AL
+    MOV AL, temp_byte
+    MOV word_C, AX
+
+    MOV AH, 09h
+    LEA DX, msg_c
+    INT 21h
+
+    MOV AL, BYTE PTR word_C + 1
+    MOV BL, AL
+    SHR AL, 4
+    CMP AL, 9
+    JBE c_h1
+    ADD AL, 7
+c_h1: ADD AL, 30h
+    MOV DL, AL
+    MOV AH, 02h
+    INT 21h
+
+    MOV AL, BL
+    AND AL, 0Fh
+    CMP AL, 9
+    JBE c_h2
+    ADD AL, 7
+c_h2: ADD AL, 30h
+    MOV DL, AL
+    MOV AH, 02h
+    INT 21h
+
+    MOV AL, BYTE PTR word_C
+    MOV BL, AL
+    SHR AL, 4
+    CMP AL, 9
+    JBE c_l1
+    ADD AL, 7
+c_l1: ADD AL, 30h
+    MOV DL, AL
+    MOV AH, 02h
+    INT 21h
+
+    MOV AL, BL
+    AND AL, 0Fh
+    CMP AL, 9
+    JBE c_l2
+    ADD AL, 7
+c_l2: ADD AL, 30h
+    MOV DL, AL
+    MOV AH, 02h
+    INT 21h
+
+
+
+
 
 
 
