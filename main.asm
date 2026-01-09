@@ -29,3 +29,73 @@ rot_count  DB 0
 START:
     MOV AX, @DATA
     MOV DS, AX
+
+    ;Citirea datelor
+MOV AH, 09h
+LEA DX, msg_intro
+INT 21h
+
+MOV AH, 0Ah
+LEA DX, buffer
+INT 21h
+
+LEA SI, buffer + 2
+LEA DI, sir
+MOV CL, buffer + 1
+MOV CH, 0
+MOV sir_len, 0
+
+loop_parse:
+CMP CX, 0
+JE check_len
+
+MOV AL, [SI]
+CMP AL, 0Dh
+JE check_len
+CMP AL, ' '
+JE skip_char
+
+CMP AL, '9'
+JBE digit_1
+SUB AL, 7
+digit_1:
+SUB AL, 30h
+SHL AL, 4
+MOV BL, AL
+
+INC SI
+DEC CX
+
+MOV AL, [SI]
+CMP AL, '9'
+JBE digit_2
+SUB AL, 7
+digit_2:
+SUB AL, 30h
+OR BL, AL
+
+MOV [DI], BL
+INC DI
+INC sir_len
+
+skip_char:
+INC SI
+DEC CX
+JMP loop_parse
+
+check_len:
+CMP sir_len, 8
+JB eroare
+CMP sir_len, 16
+JA eroare
+JMP start_calcul
+
+eroare:
+MOV AH, 09h
+LEA DX, msg_err_len
+INT 21h
+JMP final_program
+
+
+
+
