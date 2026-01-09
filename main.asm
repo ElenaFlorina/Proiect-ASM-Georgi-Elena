@@ -16,3 +16,16 @@
   buffer      DB 60, ?, 60 DUP(?) 
   sir         DB 20 DUP(0)
   sir_len     DB 0 
+
+    ;Variabile auxiliare pentru calcule
+temp_byte  DB 0
+word_C     DW 0
+max_bits   DB 0
+poz_max    DB 0
+curr_bits  DB 0
+rot_count  DB 0
+
+.CODE
+START:
+    MOV AX, @DATA
+    MOV DS, AX
