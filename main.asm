@@ -247,7 +247,115 @@ p1_2: ADD AL, 30h
     INC SI
     LOOP print_loop_1
 
+    ;Rotiri pe biti si determinare maxim
 
+    MOV max_bits, 0
+    MOV poz_max, 0
+
+    MOV CL, sir_len
+    MOV CH, 0
+    LEA SI, sir
+    MOV DI, 0
+
+loop_find_max:
+    MOV AL, [SI]
+    MOV BL, 0
+    MOV DL, 8
+count_loop:
+    SHR AL, 1
+    JNC not_one
+    INC BL
+not_one:
+    DEC DL
+    JNZ count_loop
+
+    CMP BL, max_bits
+    JBE next_byte
+    MOV max_bits, BL
+    MOV AX, DI
+    MOV poz_max, AL
+
+next_byte:
+    INC SI
+    INC DI
+    LOOP loop_find_max
+
+    MOV AH, 09h
+    LEA DX, msg_max
+    INT 21h
+
+    MOV AL, poz_max
+    INC AL
+    ADD AL, 30h
+    MOV DL, AL
+    MOV AH, 02h
+    INT 21h
+
+    MOV AH, 09h
+    LEA DX, msg_rot
+    INT 21h
+    MOV AH, 09h
+    LEA DX, newline
+    INT 21h
+
+    MOV CL, sir_len
+    MOV CH, 0
+    LEA SI, sir
+
+loop_rotiri:
+    MOV AL, [SI]
+
+    MOV BL, AL
+    AND BL, 1
+    MOV DL, AL
+    SHR DL, 1
+    AND DL, 1
+    ADD BL, DL
+
+    MOV rot_count, BL
+    CMP rot_count, 0
+    JE skip_rotate
+do_rot:
+    ROL AL, 1
+    DEC rot_count
+    JNZ do_rot
+skip_rotate:
+
+    MOV [SI], AL
+
+    MOV BL, AL
+    SHR AL, 4
+    CMP AL, 9
+    JBE r1
+    ADD AL, 7
+r1: ADD AL, 30h
+    MOV DL, AL
+    MOV AH, 02h
+    INT 21h
+
+    MOV AL, BL
+    AND AL, 0Fh
+    CMP AL, 9
+    JBE r2
+    ADD AL, 7
+r2: ADD AL, 30h
+    MOV DL, AL
+    MOV AH, 02h
+    INT 21h
+
+    MOV DL, ' '
+    INT 21h
+
+    MOV CH, 0
+    INC SI
+    LOOP loop_rotiri
+
+final_program:
+    MOV AH, 4Ch
+    INT 21h
+
+END START
+    
 
 
 
