@@ -187,6 +187,69 @@ c_l2: ADD AL, 30h
     MOV AH, 02h
     INT 21h
 
+        ;Sortare descrescatoare
+    MOV CL, sir_len
+    DEC CL
+outer_sort:
+    MOV CH, CL
+    LEA SI, sir
+inner_sort:
+    MOV AL, [SI]
+    MOV BL, [SI+1]
+    CMP AL, BL
+    JAE no_swap
+
+    MOV [SI], BL
+    MOV [SI+1], AL
+no_swap:
+    INC SI
+    DEC CH
+    JNZ inner_sort
+
+    DEC CL
+    JNZ outer_sort
+
+    MOV AH, 09h
+    LEA DX, msg_sort
+    INT 21h
+    MOV AH, 09h
+    LEA DX, newline
+    INT 21h
+
+    MOV CL, sir_len
+    MOV CH, 0
+    LEA SI, sir
+print_loop_1:
+    MOV AL, [SI]
+
+    MOV BL, AL
+    SHR AL, 4
+    CMP AL, 9
+    JBE p1_1
+    ADD AL, 7
+p1_1: ADD AL, 30h
+    MOV DL, AL
+    MOV AH, 02h
+    INT 21h
+
+    MOV AL, BL
+    AND AL, 0Fh
+    CMP AL, 9
+    JBE p1_2
+    ADD AL, 7
+p1_2: ADD AL, 30h
+    MOV DL, AL
+    MOV AH, 02h
+    INT 21h
+
+    MOV DL, ' '
+    INT 21h
+    INC SI
+    LOOP print_loop_1
+
+
+
+
 
 
 
