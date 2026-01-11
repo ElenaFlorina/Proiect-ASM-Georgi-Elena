@@ -343,6 +343,26 @@ r2: ADD AL, 30h
     MOV AH, 02h
     INT 21h
 
+    PUSH CX
+    MOV DL, '('
+    MOV AH, 02h
+    INT 21h
+
+    MOV BL, [SI]
+    MOV CX, 8
+print_bin:
+    SHL BL, 1
+    MOV DL, '0'
+    ADC DL, 0
+    MOV AH, 02h
+    INT 21h
+    LOOP print_bin
+
+    MOV DL, ')'
+    MOV AH, 02h
+    INT 21h
+    POP CX
+
     MOV DL, ' '
     INT 21h
 
