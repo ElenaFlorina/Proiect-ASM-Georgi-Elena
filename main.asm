@@ -39,6 +39,8 @@ MOV AH, 0Ah
 LEA DX, buffer
 INT 21h
 
+    ; 3. Conversie din Text (ASCII) in Numeric (HEX)
+
 LEA SI, buffer + 2
 LEA DI, sir
 MOV CL, buffer + 1
@@ -55,6 +57,8 @@ JE check_len
 CMP AL, ' '
 JE skip_char
 
+;Procesam primul caracter (High Nibble)
+
 CMP AL, '9'
 JBE digit_1
 SUB AL, 7
@@ -62,9 +66,11 @@ digit_1:
 SUB AL, 30h
 SHL AL, 4
 MOV BL, AL
-
+    ; Trecem la urmatorul caracter
 INC SI
 DEC CX
+
+ ; Procesam al doilea caracter (Low Nibble)
 
 MOV AL, [SI]
 CMP AL, '9'
@@ -72,7 +78,7 @@ JBE digit_2
 SUB AL, 7
 digit_2:
 SUB AL, 30h
-OR BL, AL
+OR BL, AL   ; Combinam cele doua jumatati
 
 MOV [DI], BL
 INC DI
@@ -233,6 +239,8 @@ inner_sort:
     CMP AL, BL
     JAE no_swap
 
+        ; Swap
+
     MOV [SI], BL
     MOV [SI+1], AL
 no_swap:
@@ -243,6 +251,8 @@ no_swap:
     DEC CL
     JNZ outer_sort
 
+           ; Afisare Sir Sortat
+
     MOV AH, 09h
     LEA DX, msg_sort
     INT 21h
@@ -250,11 +260,15 @@ no_swap:
     LEA DX, newline
     INT 21h
 
+    ; Loop afisare sir
+
     MOV CL, sir_len
     MOV CH, 0
     LEA SI, sir
 print_loop_1:
     MOV AL, [SI]
+
+ ; Afisare octet Hex inline
 
     MOV BL, AL
     SHR AL, 4
