@@ -18,12 +18,12 @@
   sir_len     DB 0 
 
     ;Variabile auxiliare pentru calcule
-temp_byte  DB 0
-word_C     DW 0
-max_bits   DB 0
-poz_max    DB 0
-curr_bits  DB 0
-rot_count  DB 0
+temp_byte  DB 0    ;variabila pentru calcule intermediare
+word_C     DW 0    ;cuvantul de control C
+max_bits   DB 0    ;numarul maxim de biti de 1 
+poz_max    DB 0    ;pozitia numarului cu cei mai multi biti de 1
+curr_bits  DB 0    ;contor curent de biti
+rot_count  DB 0    ;de cate ori trebuie sa rotim un numar
 
 .CODE
 START:
@@ -98,73 +98,107 @@ JMP final_program
 
     ;Calcul cuvant C
 start_calcul:
-    LEA SI, sir
-    MOV AL, [SI]
-    SHR AL, 4
 
+    ;Pasul 1:xor intre primul octet si ultimul octet
+
+    LEA SI, sir    ;luam adresa primului numar din sir
+    MOV AL, [SI]   ;copiem primul numar din sir in registrul AL
+    SHR AL, 4      ;izolam prima cifra hexa a numarului
+
+    ;Gasim utimul numar
     MOV BL, sir_len
     MOV BH, 0
     DEC BX
-    MOV DL, sir[BX]
-    AND DL, 0Fh
 
-    XOR AL, DL
-    MOV temp_byte, AL
+    MOV DL, sir[BX]    ;luam ultimul octet
+    AND DL, 0Fh        ;pastram doar bitii 3-0
 
-    MOV CL, sir_len
+    XOR AL, DL        
+    MOV temp_byte, AL    ;salvam rezultatul partial
+
+    ;Pasul 2:OR intre bitii din mijloc ai tuturor octetilor
+
+    MOV CL, sir_len    
     MOV CH, 0
-    LEA SI, sir
-    MOV BL, 0
+
+    LEA SI, sir    
+    MOV BL, 0    ;aici vom acumula rezultatul OR
+
 loop_or:
     MOV AL, [SI]
-    SHR AL, 2
-    AND AL, 0Fh
-    OR BL, AL
+
+    SHR AL, 2    ;dorim bitii de la mijloc ca sa ii izolam ii mutam la dreapta cu 2 pozitii
+    AND AL, 0Fh  ;izolam doar cei 4 biti doriti
+    OR BL, AL    ;facem or cu ce am acumulat pana acum
     INC SI
     LOOP loop_or
 
-    SHL BL, 4
-    OR temp_byte, BL
+    SHL BL, 4    ;mutam rezultatul pe pozitiile superioare 
+    OR temp_byte, BL    ;combinam rezultatul xor cu rezultatul or
+
+    ;Pasul 3:Suma tuturor octetilor modulo 256
 
     MOV CL, sir_len
     MOV CH, 0
     LEA SI, sir
-    MOV AX, 0
+
+
+
+    MOV AX, 0    ;in AX vom strange suma
 loop_sum:
-    MOV BL, [SI]
+    MOV BL, [SI]    ;luam octetul
     MOV BH, 0
-    ADD AX, BX
+
+    ADD AX, BX    ;adunam la total
+
     INC SI
     LOOP loop_sum
 
-    MOV AH, AL
-    MOV AL, temp_byte
-    MOV word_C, AX
+    ;Compunere cuvant C
+
+    MOV AH, AL    ;mutam suma in partea de sus
+    MOV AL, temp_byte    ;mutam logica in partea de jos
+    MOV word_C, AX    
+
+    ;Afisam cuvantul C
 
     MOV AH, 09h
     LEA DX, msg_c
     INT 21h
 
-    MOV AL, BYTE PTR word_C + 1
-    MOV BL, AL
-    SHR AL, 4
-    CMP AL, 9
+    ;Convertim din hexazecimal in ascii
+
+    ;Afisare primul octet
+
+    MOV AL, BYTE PTR word_C + 1    ;luam octetul superior
+    MOV BL, AL                     ;copie in BL pentru a nu pierde numarul original
+    SHR AL, 4                      ;luam prima cifra hexa
+
+    CMP AL, 9                      
     JBE c_h1
-    ADD AL, 7
-c_h1: ADD AL, 30h
-    MOV DL, AL
-    MOV AH, 02h
+    ADD AL, 7    
+c_h1: ADD AL, 30h        ;facem caracter ASCII
+    MOV DL, AL           ;mutam caracterul calculat in DL
+
+    MOV AH, 02h    ;functia dos pt afisare caractere
     INT 21h
 
-    MOV AL, BL
-    AND AL, 0Fh
+    ;Extragem cea de-a doua cifra
+
+    MOV AL, BL            ;aducem valoarea originala din copia salvata
+    AND AL, 0Fh           ;luam a doua cifra hexa
+
     CMP AL, 9
     JBE c_h2
     ADD AL, 7
-c_h2: ADD AL, 30h
-    MOV DL, AL
+
+c_h2: ADD AL, 30h    ;Facem caracter ascii
+
+    MOV DL, AL       ;mutam caracterul calculat in DL
     MOV AH, 02h
     INT 21h
+
+    ;Afisare al doilea octet
 
     MOV AL, BYTE PTR word_C
     MOV BL, AL
@@ -249,36 +283,47 @@ p1_2: ADD AL, 30h
 
     ;Rotiri pe biti si determinare maxim
 
+    ;Determinare octet cu cei mai multi biti de 1
+
     MOV max_bits, 0
     MOV poz_max, 0
 
-    MOV CL, sir_len
+    MOV CL, sir_len    ;folosim registrul CX ca si contor pentru bucla mare
     MOV CH, 0
+
     LEA SI, sir
-    MOV DI, 0
+
+    MOV DI, 0    ;DI va tine indexul curent
 
 loop_find_max:
-    MOV AL, [SI]
-    MOV BL, 0
-    MOV DL, 8
+    MOV AL, [SI]    ;Luam numarul
+    MOV BL, 0       ;BL va fi contorul de biti de 1 pentru acest numar
+    MOV DL, 8       ;avem 8 biti de verificat
+
 count_loop:
-    SHR AL, 1
-    JNC not_one
-    INC BL
+    SHR AL, 1       ;shiftam dreapta, bitul 0 intra in carry flag
+    JNC not_one     ;daca bitul a fost 0 sarim
+    INC BL          ;daca bitul a fost 1, incrementam contorul
+
 not_one:
-    DEC DL
-    JNZ count_loop
+    DEC DL        ;scadem contorul
+    JNZ count_loop    ;repetam pentru toti cei 8 biti
+
+    ;Verificam daca am gasit un nou record
 
     CMP BL, max_bits
     JBE next_byte
     MOV max_bits, BL
-    MOV AX, DI
-    MOV poz_max, AL
+
+    MOV AX, DI    ;mutam indexul curent(DI) in AX 
+    MOV poz_max, AL    ;Salvam indexul unde l-am gasit
 
 next_byte:
     INC SI
     INC DI
     LOOP loop_find_max
+
+    ;Afisam pozitia maxima
 
     MOV AH, 09h
     LEA DX, msg_max
@@ -287,41 +332,50 @@ next_byte:
     MOV AL, poz_max
     INC AL
     ADD AL, 30h
+
     MOV DL, AL
     MOV AH, 02h
     INT 21h
 
+    ;Rotiri pe biti
+
     MOV AH, 09h
     LEA DX, msg_rot
     INT 21h
+
     MOV AH, 09h
     LEA DX, newline
     INT 21h
 
     MOV CL, sir_len
-    MOV CH, 0
+    MOV CH, 0    ;Resetam contorul si pointerul pentru a parcurge din nou sirul
     LEA SI, sir
 
 loop_rotiri:
     MOV AL, [SI]
 
-    MOV BL, AL
-    AND BL, 1
-    MOV DL, AL
+    ;Calculam N = bit0 + bit1
+
+    MOV BL, AL    ;Copiem numarul in BL si mascam totul in afara de ultimul bit.
+    AND BL, 1     ;BL devine bitul 0
+
+    MOV DL, AL    ;Copiem numarul in DL, mutam dreapta si mascam.DL devine bitul 1
     SHR DL, 1
     AND DL, 1
+
     ADD BL, DL
 
-    MOV rot_count, BL
-    CMP rot_count, 0
+    MOV rot_count, BL        ;Salvam numarul de rotiri in variabila contor
+
+    CMP rot_count, 0    ;Daca e 0 nu intram in bucla de rotire
     JE skip_rotate
 do_rot:
-    ROL AL, 1
+    ROL AL, 1        
     DEC rot_count
-    JNZ do_rot
+    JNZ do_rot    ;repetam pana rot_count ajunge la 0
 skip_rotate:
 
-    MOV [SI], AL
+    MOV [SI], AL    ;salvam numarul rotit inapoi in memorie
 
     MOV BL, AL
     SHR AL, 4
